@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Freight inquiry desk</title>
+<style>
+  body{font:16px/1.5 system-ui,sans-serif;margin:0;color:#1a1a1a;background:#f6f7f9}
+  main{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+  nav{display:flex;gap:8px;justify-content:flex-end}
+  nav button{border:1px solid #ccd;background:#fff;padding:4px 10px;border-radius:6px;cursor:pointer}
+  nav button[aria-pressed=true]{background:#1a1a1a;color:#fff}
+  h1{font-size:1.7rem;margin:24px 0 8px}
+  form{background:#fff;border:1px solid #dde;border-radius:10px;padding:16px;margin-top:20px}
+  label{display:block;font-weight:600;margin:12px 0 4px}
+  input,textarea{width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccd;border-radius:6px;font:inherit}
+  textarea{min-height:130px}
+  .hp{position:absolute;left:-9999px}
+  .go{margin-top:16px;padding:10px 18px;border:0;border-radius:6px;background:#1a1a1a;color:#fff;font:inherit;cursor:pointer}
+  .go:disabled{opacity:.5}
+  small,#msg{color:#555}
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <button data-l="lv">LV</button><button data-l="ru">RU</button><button data-l="en">EN</button>
+  </nav>
+  <h1 data-t="h1"></h1>
+  <p data-t="intro"></p>
+  <form id="f">
+    <label for="name" data-t="name"></label>
+    <input id="name" name="name" autocomplete="name">
+    <label for="email" data-t="email"></label>
+    <input id="email" name="email" type="email" required autocomplete="email">
+    <label for="message" data-t="msg"></label>
+    <textarea id="message" name="message" required></textarea>
+    <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="go" type="submit" data-t="send"></button>
+    <p id="msg" role="status"></p>
+  </form>
+  <p><small data-t="note"></small></p>
+</main>
+<script>
+const HOOK = "https://hook.us2.make.com/43t86i877i4l71gkte9wt3so6fm6y1fq";
+const T = {
+  en:{h1:"Describe your shipment",intro:"Tell us where the cargo is going, what it is and how many pallets. You get an indicative price by email, usually within a minute.",name:"Name",email:"Email",msg:"Your shipment",send:"Send",ok:"Sent. Check your email for a first reply.",err:"Could not send. Please try again.",note:"The price in the reply is indicative. We confirm the exact price in a written offer."},
+  lv:{h1:"Aprakstiet savu kravu",intro:"Uzrakstiet, no kurienes uz kurieni vedat kravu, kas tā ir un cik paletes. Orientējošo cenu saņemsiet e-pastā, parasti minūtes laikā.",name:"Vārds",email:"E-pasts",msg:"Jūsu krava",send:"Nosūtīt",ok:"Nosūtīts. Pārbaudiet e-pastu, tur būs pirmā atbilde.",err:"Neizdevās nosūtīt. Lūdzu, mēģiniet vēlreiz.",note:"Atbildē norādītā cena ir orientējoša. Precīzu cenu apstiprinām rakstiskā piedāvājumā."},
+  ru:{h1:"Опишите ваш груз",intro:"Напишите, откуда и куда едет груз, что это и сколько паллет. Ориентировочную цену пришлём на почту, обычно в течение минуты.",name:"Имя",email:"Эл. почта",msg:"Ваш груз",send:"Отправить",ok:"Отправлено. Проверьте почту, там будет первый ответ.",err:"Не удалось отправить. Попробуйте ещё раз.",note:"Цена в ответе ориентировочная. Точную цену подтвердим в письменном предложении."}
+};
+let L = localStorage.getItem("l") || ({lv:1,ru:1}[(navigator.language||"").slice(0,2)] ? navigator.language.slice(0,2) : "en");
+function show(l){
+  L = l; try{localStorage.setItem("l",l)}catch(e){}
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-t]").forEach(e => e.textContent = T[l][e.dataset.t]);
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === l));
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.l));
+show(L);
+f.onsubmit = async e => {
+  e.preventDefault();
+  const btn = f.querySelector(".go"), m = document.getElementById("msg");
+  btn.disabled = true;
+  try{
+    // no-cors: the browser cannot read Make's answer, so "sent" means the request left, not that Make accepted it
+    await fetch(HOOK,{method:"POST",mode:"no-cors",body:new URLSearchParams(new FormData(f))});
+    m.textContent = T[L].ok; f.reset();
+  }catch(x){ m.textContent = T[L].err; }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
